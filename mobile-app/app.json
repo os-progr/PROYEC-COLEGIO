@@ -7,7 +7,9 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-status-bar",
+      "expo-secure-store"
     ],
     "userInterfaceStyle": "light",
     "ios": {
@@ -23,10 +25,6 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    },
-    "plugins": [
-      "expo-router",
-      "expo-status-bar"
-    ]
+    }
   }
 }

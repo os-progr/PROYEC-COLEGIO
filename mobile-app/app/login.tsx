@@ -1,24 +1,50 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform, Text } from 'react-native';
-import { TextInput, Button, Card, useTheme } from 'react-native-paper';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useState } from 'react';
+import { View, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { TextInput, Button, Text, Surface } from 'react-native-paper';
 import { useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
+import { theme } from '../src/components/theme';
+import { api } from '../src/services/api';
 
 export default function LoginScreen() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const theme = useTheme();
-  const router = useRouter();
 
-  const handleLogin = () => {
-    setLoading(true);
-    // Simular inicio de sesión
-    setTimeout(() => {
+  const handleLogin = async () => {
+    if (!email || !password) {
+      const msg = 'Por favor ingresa tu correo y contraseña';
+      return Platform.OS === 'web' ? window.alert(msg) : Alert.alert('Aviso', msg);
+    }
+
+    try {
+      setLoading(true);
+      const response = await api.post('/auth/login', { email, password });
+      
+      const { access_token, user } = response.data;
+      
+      // Guardar sesión de forma segura
+      if (Platform.OS !== 'web') {
+        await SecureStore.setItemAsync('token', access_token);
+        await SecureStore.setItemAsync('user', JSON.stringify(user));
+      } else {
+        localStorage.setItem('token', access_token);
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+
+      // Redirigir al panel
+      router.replace('/(teacher)');
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'Error de conexión con el servidor';
+      if (Platform.OS === 'web') {
+        window.alert(msg);
+      } else {
+        Alert.alert('Error', msg);
+      }
+    } finally {
       setLoading(false);
-      // alert o redirección
-      console.log('Login exitoso');
-    }, 1500);
+    }
   };
 
   return (
@@ -26,65 +52,51 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <LinearGradient
-        colors={['#4361EE', '#4895EF', '#4CC9F0']}
-        style={styles.background}
-      />
-      
-      <View style={styles.content}>
-        <Card style={styles.card} mode="elevated" elevation={5}>
-          <Card.Content style={styles.cardContent}>
-            
-            <View style={styles.headerContainer}>
-              <Text style={[styles.title, { color: theme.colors.primary }]}>ColegioApp</Text>
-              <Text style={styles.subtitle}>Portal Académico</Text>
-            </View>
-
-            <TextInput
-              label="Correo Electrónico"
-              value={email}
-              onChangeText={setEmail}
-              mode="outlined"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              style={styles.input}
-              left={<TextInput.Icon icon="email" />}
-              theme={{ roundness: 12 }}
-            />
-
-            <TextInput
-              label="Contraseña"
-              value={password}
-              onChangeText={setPassword}
-              mode="outlined"
-              secureTextEntry
-              style={styles.input}
-              left={<TextInput.Icon icon="lock" />}
-              theme={{ roundness: 12 }}
-            />
-
-            <Button 
-              mode="contained" 
-              onPress={handleLogin}
-              loading={loading}
-              style={styles.button}
-              contentStyle={styles.buttonContent}
-              labelStyle={styles.buttonLabel}
-            >
-              Iniciar Sesión
-            </Button>
-            
-            <Button 
-              mode="text" 
-              onPress={() => {}}
-              style={styles.textButton}
-              labelStyle={styles.textButtonLabel}
-            >
-              ¿Olvidaste tu contraseña?
-            </Button>
-          </Card.Content>
-        </Card>
+      <View style={styles.backgroundDesign}>
+        <View style={styles.circle1} />
+        <View style={styles.circle2} />
       </View>
+
+      <Surface style={styles.card} elevation={5}>
+        <Text variant="headlineMedium" style={styles.title}>
+          Bienvenido
+        </Text>
+        <Text variant="bodyMedium" style={styles.subtitle}>
+          Ingresa a tu cuenta para continuar
+        </Text>
+
+        <TextInput
+          mode="outlined"
+          label="Correo Electrónico"
+          value={email}
+          onChangeText={setEmail}
+          style={styles.input}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          left={<TextInput.Icon icon="email" />}
+        />
+
+        <TextInput
+          mode="outlined"
+          label="Contraseña"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          style={styles.input}
+          left={<TextInput.Icon icon="lock" />}
+        />
+
+        <Button 
+          mode="contained" 
+          onPress={handleLogin} 
+          style={styles.button}
+          contentStyle={styles.buttonContent}
+          loading={loading}
+          disabled={loading}
+        >
+          Iniciar Sesión
+        </Button>
+      </Surface>
     </KeyboardAvoidingView>
   );
 }
@@ -92,63 +104,63 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F8F9FA',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  background: {
+  backgroundDesign: {
     position: 'absolute',
+    top: 0,
     left: 0,
     right: 0,
-    top: 0,
     bottom: 0,
+    overflow: 'hidden',
   },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 20,
-    maxWidth: 500,
-    width: '100%',
-    alignSelf: 'center',
+  circle1: {
+    position: 'absolute',
+    top: -100,
+    right: -50,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: 'rgba(67, 97, 238, 0.1)',
+  },
+  circle2: {
+    position: 'absolute',
+    bottom: -150,
+    left: -100,
+    width: 400,
+    height: 400,
+    borderRadius: 200,
+    backgroundColor: 'rgba(76, 201, 240, 0.1)',
   },
   card: {
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)', // Efecto sutil para que el gradiente resalte
-  },
-  cardContent: {
-    padding: 24,
-  },
-  headerContainer: {
-    alignItems: 'center',
-    marginBottom: 32,
+    width: '90%',
+    maxWidth: 400,
+    padding: 30,
+    borderRadius: 20,
+    backgroundColor: 'white',
   },
   title: {
-    fontSize: 32,
     fontWeight: 'bold',
-    letterSpacing: 1,
+    color: theme.colors.primary,
+    textAlign: 'center',
+    marginBottom: 10,
   },
   subtitle: {
-    fontSize: 16,
     color: '#6c757d',
-    marginTop: 8,
+    textAlign: 'center',
+    marginBottom: 30,
   },
   input: {
-    marginBottom: 16,
-    backgroundColor: '#ffffff',
+    marginBottom: 15,
+    backgroundColor: 'transparent',
   },
   button: {
-    marginTop: 16,
-    borderRadius: 12,
+    marginTop: 10,
+    borderRadius: 10,
   },
   buttonContent: {
     paddingVertical: 8,
   },
-  buttonLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-  },
-  textButton: {
-    marginTop: 12,
-  },
-  textButtonLabel: {
-    fontSize: 14,
-  }
 });
