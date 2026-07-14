@@ -5,5 +5,8 @@
   "workspaces": [
     "backend",
     "mobile-app"
-  ]
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=backend"
+  }
 }
